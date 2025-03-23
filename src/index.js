@@ -1,16 +1,8 @@
-import React from 'react';
-import { createRoot } from 'react-dom/client';
+import React from 'react';   // import for creating react components
+import { createRoot } from 'react-dom/client'; // used for rendering components to the DOM
 
-// More imports to add later.............
+import App from './App/App.js';
 
 const root = createRoot(document.getElementById("root"));
 
-const render = () => {
-    root.render(
-        <>
-        <App />
-        </>
-    );
-}
-
-root.subscribe(render);
+root.render(<App />); // This renders <App /> onto the DOM.
