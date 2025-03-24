@@ -1,0 +1,48 @@
+
+.Search-Bar {
+    /*border: 0.5px solid black;    /* Visual placement cue */
+    width: 100%;
+
+    align-self: center;             /* Centers search bar horizontally if parent is flex*/
+    margin: 0 auto;                 /* Centers search bar vertically */
+
+    display: flex;                  /* Creates flex layout */
+    flex-direction: column;         /* input-box and button in column */
+
+    padding-top: 3rem;              /* Padding on top of search bar container */
+    margin-bottom: 3.5rem;          /* Margin underneath for space from tracks and playlist */
+}
+
+.Search-Bar input {
+    text-align: center;       /* Centers text horizontally in search center of textbox */
+    align-self: center;       /* Centers <input> horizontally in parent container */
+    width: 285px;             /* Fixed text box width*/
+    height: 2rem;             /* height of text box */
+    margin-bottom: 2rem;      /* bottom-margin from search button below */
+    border-radius: 1rem;      /* rounded text box corners for visuals */
+    border: 0.5px solid #000; /* rgb(62,39,35); /* Border to make textbox 'pop' form light background color */
+}
+
+.Search-Bar .Search-Button {
+
+    align-self: center; /* Centers horizonally in parent container 
+                           when parent is 'flex' display */
+
+    font-family: "Work Sans"; /* Button label text's font*/
+
+    color: white;            /* Button label text color */
+    background-color: #000;  /*rgb(139,69,19);  /* 'Saddle brown' for button color */
+    border: 0.5px solid #000;
+
+    height: 2rem;          /* button height */
+    width: 6.6rem;         /* button width  */
+    text-align: center;    /* Horizontal Centering of Text*/
+    align-content: center; /* Vertical Centering of Text */
+    border-radius: 1rem;   /* Rounded button edges for styling */
+}
+
+.Search-Bar .Search-Button:hover {
+    background-color: lightgray;  /* rgb(230, 162, 114); /* Button color on hover */
+    color: black;                   /* Button text on hover */
+    cursor: pointer;                  /* 'pointer' cursor on hover (to click) */
+}

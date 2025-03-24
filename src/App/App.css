@@ -1,0 +1,23 @@
+h1 { /* Header Text on top of App */
+                            
+    margin-top: 0;                  /* No margin/white-space on top of h1 */
+    text-align: center;             /* Text centered */
+    font-family: 'Poppins';         /* font style for h1 header */
+    background-color: #000;       /* rgb(139,69,19);   /* 'Saddle brown' for h1 background color*/
+    color: #fff;                  /* White text color */
+}
+
+.App {
+    display: flex;           /* Turns class container into flex layout*/
+    flex-direction: column;  /* Flex objects stack downwards */
+    width: 70%;              /* Covers 70% of width of parent (<body>) container */
+    margin: auto;            /* Centeres vertically/horizontally (may change later) */
+    padding-bottom: 3rem;    /* Prevents bottom of container from touching viewport */
+}
+
+.App-playlist {                     /* Contains the 'Search Results' and 'Tracklist' containers/features */
+    display: flex;                  /* Flex layout */ 
+    width: 100%;                    /* width matches parent container's */
+    flex-direction: row;            /* Puts child containers side-to-side */    
+    justify-content: space-around;  /* Puts space/padding 'equally' around each child container */
+}

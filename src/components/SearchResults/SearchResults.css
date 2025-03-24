@@ -1,0 +1,22 @@
+
+.Search-Results {
+    border: 2px solid black;              /* Solid border to differentiate Container from background*/
+    border-radius: 1.5rem;                  /* Rounds corners of Search Results container */
+    background-color:beige;               /* rgb(139,69,19);   /* 'Saddle brown' for current background color*/
+    /*overflow-y: scroll;*/
+    box-shadow: 0 4px 2px 2px #000000;    /* Shadow around search results container for 'pop' effect */
+    padding: 0.88rem;                       /* Prevents content from touch border/edge */
+
+    width: 45%;         /* Takes portion of parent container width (to make room for Playlist container */
+    height: 950px;      /* Height of container */
+
+    display: flex;          /* Flex layout with column direction used when search results are provided */
+    flex-direction: column;
+}
+
+.Search-Results h2 {    /* Styling for header <h2> inside container */
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.55rem;  
+    margin-top: 0;  /* position header to top of container (but ealier padding prevents h2 from touching edges)*/
+    border-bottom: 2px solid rgba(75, 75, 75, 0.61);   /* bottom borderline to visual separation */
+}

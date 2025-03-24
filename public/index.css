@@ -1,0 +1,24 @@
+/* Ensure smooth scrolling and not jumping  to anchor link(#) in header menu*/
+
+/*
+html {
+    scroll-behavior: smooth;  
+} */
+
+html, body {
+    margin: 0;        /* No margins and paddings around html, body to prevent edge 'white' spaces*/
+    padding: 0;
+    font-size: 16px; /* VERY IMPORTANT!! Sets font-size standard (default font-size) from 
+                        which 'rem' adjustments can be made for nested font-sizes, 
+                        margins, paddings, etc!!! . */
+}
+
+body {
+
+    /* Place holder background color */
+    background-color: beige;
+
+    /** Will Figure Out Backgroudn Image Later !!!**/
+    /* background-image: url(./images/stars-background-2-640x640.jpg); */ 
+    /* background-size: 100%;  */
+}
