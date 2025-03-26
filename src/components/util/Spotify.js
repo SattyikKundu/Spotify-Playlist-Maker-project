@@ -71,8 +71,26 @@ const generateRandomString = (length) => {  // Generate random string for provid
 }
 
 // Finally generates 64-char random string for PKCE code_verifier
-const codeVerifier = generateRandomString(64);
 
+// const codeVerifier = generateRandomString(64);
+/* The above DOES NOT work since this generates a *new* code verifier every time 
+ * the app loads or refreshes. This breaks PKCE flow because the generated verifier 
+ * won't match the original one used to create the code_challenge that was sent to Spotify. 
+ * When exchanging the auth code for a token, Spotify will reject it with "invalid_grant" since 
+ * it expects the *same* code_verifier you originally used — not a fresh one.
+ * 
+ * However, the below version works.
+ */
+
+let codeVerifier = localStorage.getItem('code_verifier'); // attempts to get existing code_verifier from local storage. 
+
+if (!codeVerifier) {    // Checks if no verifier was previously saves (1st login or storage cleared)
+  codeVerifier = generateRandomString(64);              // generate 64-char random string for PKCE code_verifier
+
+  localStorage.setItem('code_verifier', codeVerifier);  //Store  newly generated code_verifier for later token exchange
+                                                        // This value must match exactly when exchanging the 
+                                                        // authorization code for an access token
+}
 
 /*
 Once code verifier is generated, it needs to be 'hashed/transformed'
@@ -170,7 +188,37 @@ authUrl.search = new URLSearchParams(params).toString();
  * then assign it to 'window.location.href', which immediately navigates the browser to the URL.
  * This redirects user to Spotify’s authorization page, where they log in and grant access.
  */
-window.location.href = authUrl.toString();   
+//window.location.href = authUrl.toString();   
+const redirectToSpotifyAuth = async () => {
+    // 🛑 Only generate a new verifier if one isn't already saved
+    let verifier = localStorage.getItem('code_verifier');
+    if (!verifier) {
+      verifier = generateRandomString(64);
+      localStorage.setItem('code_verifier', verifier);
+    }
+  
+    const hashed = await sha256(verifier);
+    const codeChallenge = base64encode(hashed);
+  
+    const authUrl = new URL('https://accounts.spotify.com/authorize');
+    const params = {
+      response_type: 'code',
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      scope,
+      code_challenge_method: 'S256',
+      code_challenge: codeChallenge,
+      show_dialog: 'true',
+    };
+  
+    authUrl.search = new URLSearchParams(params).toString();
+    window.location.href = authUrl.toString();
+  };
+  
+  
+  
+  
+  
 
 /* If user accepts requested permission, OAuth service redirects user
    back to URL specified in 'redirect_uri' field. This callback should
@@ -233,14 +281,38 @@ const getToken = async code => { // Function exchanged authorization code for ac
       }),
     }
   
+    /*
+    try {
+        const res = await fetch(url, payload);
+        const response = await res.json();
+    
+        if (!response.access_token) {
+          throw new Error('No access token returned: ' + JSON.stringify(response));
+        }
+    
+        localStorage.setItem('access_token', response.access_token);
+        return response.access_token; // ✅ Return the token just in case
+    } catch (err) {
+        console.error('getToken() failed:', err.message);
+        throw err; // So calling component can catch it
+    } */
+    
     const body = await fetch(url, payload); // Sends POST request to Spotify's token endpoint with constructed payload
     const response = await body.json();     // Parse JSON response body to extract access token and other data
   
+    localStorage.setItem('debug_response', JSON.stringify(response));
+
+    if (!response.access_token) {
+        throw new Error('No access token returned: ' + JSON.stringify(response));
+    }
+
     // Store access token in localStorage for use in subsequent API calls
     // This token is required in the Authorization header (as a Bearer token)
     localStorage.setItem('access_token', response.access_token);
+
+    return response.access_token;
 }
 
 
 
-export default {getToken}; // export function(s) as a bundle for external use.
+export {getToken, redirectToSpotifyAuth}; // export function(s) as a bundle for external use.
