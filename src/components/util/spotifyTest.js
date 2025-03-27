@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getToken, redirectToSpotifyAuth } from '../../../../Spotify_original_reference';
+import { getToken, redirectToSpotifyAuth } from './Spotify.js';
 
 const SpotifyTest = () => {
   const [accessToken, setAccessToken] = useState(null);
