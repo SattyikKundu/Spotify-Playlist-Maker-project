@@ -1,15 +1,7 @@
-// 📁 spotifyTest.js
-// React component to test PKCE Spotify Authorization + fetch /me profile
-
 import React, { useEffect, useState } from 'react';
-//import { getToken, redirectToSpotifyAuth } from './Spotify';
-import { getToken } from './Spotify';
+import { getToken, redirectToSpotifyAuth } from '../../../../Spotify_original_reference';
 
 const SpotifyTest = () => {
-
-    // ← Add this once for a clean slate test
-  //useEffect(() => { localStorage.clear();  }, []);
-
   const [accessToken, setAccessToken] = useState(null);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -19,28 +11,20 @@ const SpotifyTest = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
 
-    // Debug log of current state
+    // Show current debug state
     setDebugInfo({
       code,
       codeVerifier: localStorage.getItem('code_verifier'),
       storedToken: localStorage.getItem('access_token')
     });
 
-    // If no code or token exists, trigger Spotify auth redirect
-    /*
-    if (!code && !accessToken) {
-      redirectToSpotifyAuth();
-      return;
-    } */
-
-    // If code is present, request token
+    // If we got redirected with a code from Spotify, exchange it for a token
     if (code && !accessToken) {
       getToken(code)
         .then((token) => {
-          console.log("Returned access token:", token); // TEMP DEBUG  
           if (token) {
             setAccessToken(token);
-            window.history.replaceState({}, document.title, '/');
+            window.history.replaceState({}, document.title, '/'); // Clean up URL
           } else {
             setError('Access token was not returned.');
           }
@@ -50,9 +34,9 @@ const SpotifyTest = () => {
         });
     }
 
-    // Fallback: load token from localStorage
+    // If a token is already saved, load it into state
     const token = localStorage.getItem('access_token');
-    if (token) {
+    if (token && !accessToken) {
       setAccessToken(token);
     }
   }, [accessToken]);
@@ -70,18 +54,36 @@ const SpotifyTest = () => {
 
         if (!res.ok) {
           const errorText = await res.text();
+
           setDebugInfo((prev) => ({
             ...prev,
             status,
             message: errorText,
             token,
           }));
-          throw new Error('Spotify API error');
+
+          if (status === 401) {
+            // 🧠 401 = token expired, so clear and re-auth
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('code_verifier');
+            setAccessToken(null); // trigger re-auth
+            redirectToSpotifyAuth(); // start flow again
+          } else {
+            throw new Error('Spotify API error');
+          }
+
+          return;
         }
 
         const json = await res.json();
         setData(json);
-        setDebugInfo((prev) => ({ ...prev, status, message: 'Success', token }));
+
+        setDebugInfo((prev) => ({
+          ...prev,
+          status,
+          message: 'Success',
+          token,
+        }));
       } catch (err) {
         setError('Error fetching data: ' + err.message);
       }

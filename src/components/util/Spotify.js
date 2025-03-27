@@ -20,14 +20,13 @@
 /**********************************************************************************************************/
 /**********************************************************************************************************/
 
-/**Create Code Verifier, which is a high-entrophy cryptographic random
- * string with 43-128 characters. See function below.
+/* 1st, create Code Verifier, which is a high-entrophy cryptographic random
+ * string with 43-128 characters. See function(s) below, which will be implemented later.
  */
 
 const generateRandomString = (length) => {  // Generate random string for provided length
 
-    // Pool of possible random characters for string ( 26 uppercase, 26 lowercase, & 10 digits)
-    // length = 26 + 26 + 10 = 62
+    // Pool of possible random characters for string ( 26 uppercase, 26 lowercase, & 10 digits = 62 chars )
     const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
     /* Generates a Uint8array (unsigned 8-bit integers array (0-255 range)) for given length 
@@ -70,32 +69,10 @@ const generateRandomString = (length) => {  // Generate random string for provid
     );
 }
 
-// Finally generates 64-char random string for PKCE code_verifier
 
-// const codeVerifier = generateRandomString(64);
-/* The above DOES NOT work since this generates a *new* code verifier every time 
- * the app loads or refreshes. This breaks PKCE flow because the generated verifier 
- * won't match the original one used to create the code_challenge that was sent to Spotify. 
- * When exchanging the auth code for a token, Spotify will reject it with "invalid_grant" since 
- * it expects the *same* code_verifier you originally used — not a fresh one.
- * 
- * However, the below version works.
+/* 2nd, after the code verifier is generated using the above function, it needs to be 'hashed/transformed'
+ * via SHA256 algorithm. This value will be sent within authorization request.
  */
-
-let codeVerifier = localStorage.getItem('code_verifier'); // attempts to get existing code_verifier from local storage. 
-
-if (!codeVerifier) {    // Checks if no verifier was previously saves (1st login or storage cleared)
-  codeVerifier = generateRandomString(64);              // generate 64-char random string for PKCE code_verifier
-
-  localStorage.setItem('code_verifier', codeVerifier);  //Store  newly generated code_verifier for later token exchange
-                                                        // This value must match exactly when exchanging the 
-                                                        // authorization code for an access token
-}
-
-/*
-Once code verifier is generated, it needs to be 'hashed/transformed'
-via SHA256 algorithm. This value will be sent within authorization request.
-*/
 
 const sha256 = async (plain) => { // Define asynchronous function that takes plain text string as input
 
@@ -112,7 +89,7 @@ const sha256 = async (plain) => { // Define asynchronous function that takes pla
     );
 }
 
-/* Next, function 'base64encode' returns the base64 representation
+/* 3rd, below function 'base64encode' returns the base64 representation
    of the digest calculated with previous sha256() function. */
 
 // Define a function to base64-url-encode binary input (like SHA-256 hash)
@@ -132,13 +109,6 @@ const base64encode = (input) => {
         .replace(/\//g, '_'); // Replace "/" with "_" (URL-safe: "/" is not valid in URLs)
 }
 
-/* Now combine the previous code pieces to complete code challenge generation */
-const hashed = await sha256(codeVerifier);
-const codeChallenge = base64encode(hashed);
-
-
-
-
 
 /**********************************************************************************************************/
 /**********************************************************************************************************/
@@ -153,104 +123,78 @@ const codeChallenge = base64encode(hashed);
    including 2 additional parameters: code_challange and code_challenge_method
 */
 
-//let accessToken;                                // used to store access token once retrieved from url
 const clientId = 'f543695a790649369f8a548e31afb691'; // <= paste Client ID here from Spotify developer dashboard
 const redirectUri = 'http://localhost:3000'; // <= redirectUri is where the API data will be sent towards
                                              // needs to match what is configured on Spotify's app dashboard.
 
-// Define set of permissions your app is requesting from the user
-// In this case: access to user's private profile and email address                                     
-const scope = 'user-read-private user-read-email';
 
-// Create a URL object pointing to Spotify's authorization endpoint
-const authUrl = new URL("https://accounts.spotify.com/authorize")
-                                             
-// Store code verifier in localStorage for later use during token exchange
-window.localStorage.setItem('code_verifier', codeVerifier);
+const redirectToSpotifyAuth = async () => { // Created PKCE Redirect Function — this initiates Spotify auth request *safely*
+  
+  /* Step 1: Retrieve existing code_verifier (or create and store new one)
+             using the generateRandomString() from earlier. */
+  let codeVerifier = localStorage.getItem('code_verifier'); // attempts to get existing code_verifier from local storage. 
 
-const params =  { // Define required query parameters for PKCE authorization request
-    response_type: 'code',      // Required: We want an authorization code (standard OAuth flow)
-    client_id: clientId,        // Required: Your app's registered Client ID 
-    redirect_uri: redirectUri,  // Required: Must match a URI you listed in Spotify Dashboard
-    scope,                      // Optional: Space-separated list of permissions your app needs
-  //state: 'xyz123',            // Optional (but recommended): Random string to prevent CSRF attacks 
-    code_challenge_method: 'S256', // Required: Tells Spotify we're using SHA-256 for code challenge
-    code_challenge: codeChallenge, // Required: The SHA-256 hashed & base64url-encoded version of codeVerifier
-}
+  if (!codeVerifier) {    // Checks if no verifier was previously saved (1st login or storage cleared)
+    codeVerifier = generateRandomString(64);             // generate 64-char random string for PKCE code_verifier
 
-/* Convert 'params' object into properly encoded query string like:
- * response_type=code&client_id=...&redirect_uri=...&scope=...&code_challenge=...&code_challenge_method=S256
- * Then attach query string to 'authUrl' object so final URL includes all parameters.
- */
-authUrl.search = new URLSearchParams(params).toString();
+    // Store code verifier in localStorage for later use during token exchange
+    window.localStorage.setItem('code_verifier', codeVerifier);
 
-/* Convert the complete 'authUrl' (base + query string) to a string,
- * then assign it to 'window.location.href', which immediately navigates the browser to the URL.
- * This redirects user to Spotify’s authorization page, where they log in and grant access.
- */
-//window.location.href = authUrl.toString();   
-const redirectToSpotifyAuth = async () => {
-    // 🛑 Only generate a new verifier if one isn't already saved
-    let verifier = localStorage.getItem('code_verifier');
-    if (!verifier) {
-      verifier = generateRandomString(64);
-      localStorage.setItem('code_verifier', verifier);
-    }
-  
-    const hashed = await sha256(verifier);
-    const codeChallenge = base64encode(hashed);
-  
-    const authUrl = new URL('https://accounts.spotify.com/authorize');
-    const params = {
-      response_type: 'code',
-      client_id: clientId,
-      redirect_uri: redirectUri,
-      scope,
-      code_challenge_method: 'S256',
-      code_challenge: codeChallenge,
-      show_dialog: 'true',
-    };
-  
-    authUrl.search = new URLSearchParams(params).toString();
-    window.location.href = authUrl.toString();
-  };
-  
-  
-  
-  
-  
+    //localStorage.setItem('code_verifier', codeVerifier); //Store newly generated code_verifier for later token exchange
+                                                         // This value must match exactly when exchanging the 
+                                                         // authorization code for an access token
+  } 
 
-/* If user accepts requested permission, OAuth service redirects user
-   back to URL specified in 'redirect_uri' field. This callback should
-   contain TWO query parameters within URL: 
-   -code  (authorization token that can be exhcanged for an access token)
-   -state (value of state parameter supplied in request)
-*/
+  // Steps 2 & 3: Now combine the previous functions, sha256() and base64encode(), to complete code challenge generation */
 
-// Below code parses URL to retrieve code parameter
-const urlParams = new URLSearchParams(window.location.search);
-let code = urlParams.get('code');
+  const hashed = await sha256(verifier);       // Step 2: Generate SHA256 hash of code_verifier via SubtleCrypto API
+  const codeChallenge = base64encode(hashed);  // Step 3: Convert hash to base64url-encoded string — this is our 'code_challenge'
+                                                       // This is sent in the auth request and will be matched later by Spotify
 
-/* If user doesn't accept request or if error occured, the response 
-   query cotains following parmeters:
-   - error (reason authorization failed (ex: 'access_denied))
-   - state (value of 'state' parameter in request)
+  // Step 4: Create a URL object pointing to Spotify's authorization endpoint
+  const authUrl = new URL('https://accounts.spotify.com/authorize'); 
+
+  // Step 5: Define set of permissions your app is requesting from the user
+  // In below case: access to user's private profile and email address                                     
+  const scope = 'user-read-private user-read-email';
+
+  // Step 6: Set required PKCE + OAuth query parameters
+  const params =  { // Define required query parameters for PKCE authorization request
+    response_type: 'code',         // Required: Tells Spotify that We want an authorization code (standard OAuth flow)
+    client_id: clientId,           // Required: Your app's registered Client ID 
+    redirect_uri: redirectUri,     // Required: Where Spotify sends user after login (Must match URI you listed in Spotify Dashboard)
+    scope,                         // Optional: Space-separated list of permissions your app needs
+  //state: 'xyz123',               // Optional (but recommended): Random string to prevent CSRF attacks 
+    code_challenge_method: 'S256', // Required: Tells Spotify we're using PKCE hashing method SHA-256 for code challenge
+    code_challenge: codeChallenge, // Required: The SHA-256 hashed + base64url-encoded version of codeVerifier
+    show_dialog: 'true',           // Optional: forces Spotify to show the login/consent screen every time
+  }
+
+  // Step 7: Convert params to query string and attach to URL
+  /* Convert 'params' object into properly encoded query string like:
+   * 'response_type=code&client_id=...&redirect_uri=...&scope=...&code_challenge=...&code_challenge_method=S256'
+   * Then attach query string to 'authUrl' object so final URL includes all parameters.
+   * Now, the full URL looks like: https://accounts.spotify.com/authorize?response_type=code&client_id=...
    */
+  authUrl.search = new URLSearchParams(params).toString();  
 
-
-
+  // Step 8: Redirect the user to the Spotify auth screen
+  /* Converts complete 'authUrl' (base + query string) to a string,
+   * then assign it to 'window.location.href', which immediately navigates the browser to the URL.
+   * This redirects user to Spotify’s authorization page, where they log in and grant access.
+   */
+  window.location.href = authUrl.toString(); 
+};
 
 /**********************************************************************************************************/
 /**********************************************************************************************************/
 /**************************** 3. Request access token from authorization code. ****************************/
 /**********************************************************************************************************/
 /**********************************************************************************************************/
-
-/* After user accepts authorization rqeuest of prev. step, the 
-   authorization code is exchanged for an access token.   
-   A POST request must be sent to '/api/token' endpoint.
-   */
-
+ 
+/* After user accepts authorization rqeuest of prev. step, the authorization code 
+ * is exchanged for an access token. A POST request must be sent to '/api/token' endpoint.
+ */
 const getToken = async code => { // Function exchanged authorization code for access token
 
     // Retrieves original code verifier from localStorage.
@@ -280,29 +224,17 @@ const getToken = async code => { // Function exchanged authorization code for ac
                                                     // This must match 'code_challenge' previously sent to Spotify
       }),
     }
-  
-    /*
-    try {
-        const res = await fetch(url, payload);
-        const response = await res.json();
-    
-        if (!response.access_token) {
-          throw new Error('No access token returned: ' + JSON.stringify(response));
-        }
-    
-        localStorage.setItem('access_token', response.access_token);
-        return response.access_token; // ✅ Return the token just in case
-    } catch (err) {
-        console.error('getToken() failed:', err.message);
-        throw err; // So calling component can catch it
-    } */
-    
+      
     const body = await fetch(url, payload); // Sends POST request to Spotify's token endpoint with constructed payload
     const response = await body.json();     // Parse JSON response body to extract access token and other data
   
+
+    // Save the full response from Spotify into localStorage (optional for debugging)
     localStorage.setItem('debug_response', JSON.stringify(response));
 
-    if (!response.access_token) {
+    if (!response.access_token) {  // Check if the access_token is missing from response
+        
+        // If missing, throw error and include entire response for easier debugging
         throw new Error('No access token returned: ' + JSON.stringify(response));
     }
 
