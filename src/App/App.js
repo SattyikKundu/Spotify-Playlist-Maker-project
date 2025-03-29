@@ -14,20 +14,22 @@ const App = () => {
   const [forPlaylist, setForPlaylist] = useState([]);     // Stores which searchResult tracks will part of 
 
   const handleInput = (text) => { // pass this function as a prop for <SearchBar> so
-                              // SearchBar.js can fill the 'input' for App() in THIS App.js       
+                                  // SearchBar.js can fill the 'input' for App() in THIS App.js       
     setInput(text);
   }
+
+  const getSearchResults = (results) => { 
+    setSearchResults(results);
+  } 
   
   useEffect(()=> { // Used to authenticate Spotify API calls when opening App.
 
     const token = localStorage.getItem('access_token'); // checks if 'access_token' is in localStorage.
 
-    // Checks if 'accessToken' is empty and 'token' is not empty
-    if (!accessToken && token) {
+    if (!accessToken && token) {  // Checks if 'accessToken' is empty and 'token' is not empty
           setAccessToken(token);  // set 'access_token' from local Storage as accessToken
-        }
-
-    if(!accessToken && !token) { // If there's no set 'accessToken' nor 'access_token' in local storage....
+    }
+    else if(!accessToken && !token) { // If there's no set 'accessToken' nor 'access_token' in local storage....
 
       Spotify.redirectToSpotifyAuth(); // Login to Spotify and go to 'redirecUri' (where your app is)
 
@@ -38,9 +40,11 @@ const App = () => {
       let code = urlParams.get('code');             // extracts from url the value of 'code' parameter
 
       setAccessToken(Spotify.getToken(code)); // Get token via 'code' and save it to accessToken
+
     } 
-    else { // If token IS in localStorage, set it as 'accessToken'
+    else { // If access_token IS in localStorage, set it as 'accessToken'
       setAccessToken(token);
+
     }
   },[]); // emprty array ([]) ensures Spotify Authentication occurs ONLY ONCE when App first mounts. 
 
@@ -60,7 +64,11 @@ const App = () => {
       {/* <p>`Input from search box click is:${input}`</p> */}
 
       <div class="App-playlist">
-        <SearchResults searchTerm={input}/>
+        <SearchResults 
+          searchTerm={input}
+          //searchOutput={getSearchResults}
+          token={accessToken}
+          />
         <PlayList />
       </div>
     </div>

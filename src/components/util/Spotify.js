@@ -42,7 +42,7 @@ const Spotify = {
       // STEP 1: Code Challange generation from Code verifier
       let codeVerifier = window.localStorage.getItem('code_verifier'); // attempts to get existing code_verifier from local storage. 
 
-      if (!codeVerifier) { // If no codeVerifier already saved, generate random 64-char string for 'PKCE code_verifier' 
+      if (!codeVerifier) { // If no codeVerifier exists, generate random 64-char string for 'PKCE code_verifier' 
         codeVerifier = generateRandomString(64);           
 
         // Saves 'codeVerifier' into 'code_verifier' in localStorage for later use during token exchange
@@ -57,7 +57,7 @@ const Spotify = {
       const codeChallenge = base64encode(hashed);                                // Convert hash to base64url-encoded string — this is our 'code_challenge'
                                                                                  // This is sent as part of auth request and will be matched later by Spotify
 
-                                                                                 
+
       // STEP 2: Request authorization from the user and retrieve the authorization code.                                              
 
       const authUrl = new URL('https://accounts.spotify.com/authorize'); // New URL object pointd to authorization endpoint
@@ -147,7 +147,35 @@ const Spotify = {
         localStorage.setItem('access_token', response.access_token);
 
         return response.access_token;
-    }
+    },
+
+    // Function to return search Resulting using search Term input
+
+    async returnSearchResults(input, token) {
+
+      let formattedInput = input.trim(); // removes spaces from start and end
+
+      formattedInput = formattedInput.split(/\s+/).join('+'); // Removes spaces between words and joins using '+' signs 
+
+      const endPointUrl = `https://api.spotify.com/v1/search?q=${formattedInput}&type=track`;
+
+      const response = await fetch(
+        endPointUrl,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      const data = await response.json();
+
+      if (data) {
+        return data;
+      }
+
+    },
 
 }
 
