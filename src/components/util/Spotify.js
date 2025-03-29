@@ -3,7 +3,7 @@
     modern mobile app, single page web apps, or any other applications
     where the client secret can't be stored safely.
 
-    The implementation of PKCE extension consists of following steps:
+    The implementation of PKCE extension generally consists of following steps:
     1. Code Challange generation from a Code Verifier
     2. Request authorization from the user and retrieve the authorization code.
     3. Request access token from authorization code.
@@ -19,33 +19,30 @@ import {generateRandomString, sha256, base64encode} from './helpers.js';
 
 
 
-const clientId = 'f543695a790649369f8a548e31afb691'; // <= paste Client ID here from Spotify developer dashboard
-const redirectUri = 'http://localhost:3000';         // <= redirectUri is where the API data will be sent towards
-                                                     // needs to match what is configured on Spotify's app dashboard.
+const clientId = 'f543695a790649369f8a548e31afb691'; // <= Client ID from Spotify developer account's dashboard
+const redirectUri = 'http://localhost:3000';         // <= redirectUri is where the API data gets sent towards.
+                                                     // This needs to match 'redirecUri' configured in Spotify's app dashboard.
 
 /* NOTE: The redirectToSpotifyAuth() and getToken() functions in Spotify object
-         were created using the provided url as reference: 
+         were created using the provided article as reference: 
          https://developer.spotify.com/documentation/web-api/tutorials/code-pkce-flow
 
-         As the provided code from url linked article didn't work exactly as provided, the created
-         redirectToSpotifyAuth() and getToken() functions in object 'Spotify' uses rearranged
-         versions of the provided code. The article is still an important read (alongside provided
-         comment below) to und how the overall code works. 
+         The article (alongside provided comment below) helps clarify how the overall code works. 
 */
-
 
 const Spotify = {
                                                     
     // Below is created PKCE Redirect Function — this initiates Spotify auth request *safely*
-    // This auth function is needed before even using getToken() to utilize rest of the API features
+    // redirectToSpotifyAuth() is needed before using getToken() to utilize other API features
     
-    async redirectToSpotifyAuth() {     // NOTE: inside an object literal ('Spotify'), the function syntax is 'async function(){}'
-                                        //       and not 'const redirectToSpotifyAuth = async () => {}' 
+    async redirectToSpotifyAuth() {  // self-NOTE: inside object literal ('Spotify'), the function syntax is 'async function(){}'
+                                     //     and not 'const redirectToSpotifyAuth = async () => {}' 
+
 
       // STEP 1: Code Challange generation from Code verifier
       let codeVerifier = window.localStorage.getItem('code_verifier'); // attempts to get existing code_verifier from local storage. 
 
-      if (!codeVerifier) { // If no codeVerifier already saved, generate random 64-char string for PKCE code_verifier 
+      if (!codeVerifier) { // If no codeVerifier already saved, generate random 64-char string for 'PKCE code_verifier' 
         codeVerifier = generateRandomString(64);           
 
         // Saves 'codeVerifier' into 'code_verifier' in localStorage for later use during token exchange
@@ -54,13 +51,13 @@ const Spotify = {
           when exchanging the authorization code for an access token*/
       } 
 
-    /* Now utilized and combine the helper functions, sha256() 
-     * and base64encode(), to complete code challenge generation 
-     */
+    /* Now utilized and combine helper functions, sha256() 
+       and base64encode(), to complete code challenge generation */
       const hashed = await sha256(window.localStorage.getItem('code_verifier')); // Generate hash of code_verifier using imported sha256()
       const codeChallenge = base64encode(hashed);                                // Convert hash to base64url-encoded string — this is our 'code_challenge'
                                                                                  // This is sent as part of auth request and will be matched later by Spotify
 
+                                                                                 
       // STEP 2: Request authorization from the user and retrieve the authorization code.                                              
 
       const authUrl = new URL('https://accounts.spotify.com/authorize'); // New URL object pointd to authorization endpoint
@@ -88,10 +85,15 @@ const Spotify = {
       authUrl.search = new URLSearchParams(params).toString();  
 
       /* Converts complete 'authUrl' (base + query string) to a string,
-      * then assign it to 'window.location.href', which immediately navigates the browser to the URL.
+      * then assign it to 'window.location.href', which immediately navigates browser to URL.
       * This redirects user to Spotify’s authorization page, where they log in and grant access.
       */
-      window.location.href = authUrl.toString(); 
+      window.location.href = authUrl.toString();
+
+      /* EXTREMELY IMPORTANT: After logging in, the user is redirected to 'redirectUri' which includes
+       *                      'code' value in urlParams(ex: http://localhost:3000/?code=ZAXNw5Uww...34hfa9f34...). 
+       *                      The 'code' value must be extracted and then used in getToken(code) function.
+       */
     },
 
     

@@ -1,16 +1,18 @@
-import SpotifyTest from '../../../../zzz_README_image_for_Github/Jammming-spotify-playlist-readme-etc/old versions of util folder/spotifyTest';
 import './SearchResults.css';
 
 import { useEffect, useState } from 'react';
 
-const SearchResults = ({}) => {
+const SearchResults = ({searchTerm}) => {
 
+    const [searchResults, setSearchResults] = useState([]); // Stores and tracks Search Results in array
 
+    const trackSearch = async () => {
+
+    }
 
     return (
         <div class="Search-Results">
             <h2> Results </h2>
-          {/*  <SpotifyTest /> */}
         </div>
     )
 
